@@ -4,7 +4,7 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - prod  # Ejecutar solo en la rama 'prod' test1
+      - main  # Ejecutar solo en la rama 'prod' test1
 
 jobs:
   build:
