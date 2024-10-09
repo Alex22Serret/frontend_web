@@ -1,0 +1,59 @@
+
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - prod  # Ejecutar solo en la rama 'prod' test1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Notify Slack - Inicio de construcción
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data '{
+          "channel": "#ci-alerts",
+          "text": "Inicio de construcción de la imagen Docker para front-web..."
+        }' $SLACK_WEBHOOK_URL
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Docker Hub
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+
+    - name: Build Docker image
+      id: build
+      run: docker build -f frontend_web/Dockerfile -t alex22serret/frontend_web:latest frontend_web
+
+
+    - name: Push Docker image
+      run: docker push alex22serret/frontend_web:latest
+
+    - name: Notify Slack - Éxito en construcción
+      if: ${{ success() }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data '{
+          "channel": "#ci-alerts",
+          "text": "La imagen Docker 'front-web' ha sido construida y subida exitosamente."
+        }' $SLACK_WEBHOOK_URL
+    - name: Notify Slack - Error en construcción
+      if: ${{ failure() }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data '{
+          "channel": "#ci-alerts",
+          "text": "Error en la construcción de la imagen Docker 'front-web'."
+        }' $SLACK_WEBHOOK_URL
