@@ -1,63 +1,97 @@
-
-name: Build and Push Docker Image
+name: Build and Push Docker Image and SonarCloud Analysis
 
 on:
   push:
     branches:
-      - main  # Ejecutar solo en la rama 'prod' test1
+      - main  # Ejecutar solo en la rama 'main'
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Notify Slack - Inicio de construcción
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts-front",
-          "text": "Inicio de construcción de la imagen Docker para front-web..."
-        }' $SLACK_WEBHOOK_URL
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
+      - name: Notify Slack - Inicio de construcción
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alerts-front",
+            "text": "Inicio de construcción de la imagen Docker para front-web..."
+          }' $SLACK_WEBHOOK_URL
 
-    - name: Log in to Docker Hub
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
 
-    - name: List files in workspace
-      id: test
-      run: ls -R
+      - name: Log in to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
-    - name: Build Docker image
-      id: build
-      run: docker build -f Dockerfile -t alex22serret/frontend_web:latest .
+      - name: List files in workspace
+        id: list_files
+        run: ls -R
 
+      - name: Build Docker image
+        id: build
+        run: docker build -f Dockerfile -t alex22serret/frontend_web:latest .
 
-    - name: Push Docker image
-      run: docker push alex22serret/frontend_web:latest
+      - name: Push Docker image
+        run: docker push alex22serret/frontend_web:latest
 
-    - name: Notify Slack - Éxito en construcción
-      if: ${{ success() }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts-front",
-          "text": "La imagen Docker 'front-web' ha sido construida y subida exitosamente."
-        }' $SLACK_WEBHOOK_URL
-    - name: Notify Slack - Error en construcción
-      if: ${{ failure() }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts-front",
-          "text": "Error en la construcción de la imagen Docker 'front-web'."
-        }' $SLACK_WEBHOOK_URL
+      - name: Notify Slack - Éxito en construcción
+        if: ${{ success() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alert-front",
+            "text": "La imagen Docker 'front-web' ha sido construida y subida exitosamente."
+          }' $SLACK_WEBHOOK_URL
+
+      - name: Notify Slack - Error en construcción
+        if: ${{ failure() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alert-front",
+            "text": "Error en la construcción de la imagen Docker 'front-web'."
+          }' $SLACK_WEBHOOK_URL
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Notify Slack - Inicio de análisis SonarCloud
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alert-front",
+            "text": "Inicio del análisis de SonarCloud para el proyecto front-web..."
+          }' $SLACK_WEBHOOK_URL
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Necesario para obtener información del PR, si la hay
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Notify Slack - Fin de análisis SonarCloud
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alert-front",
+            "text": "El análisis de SonarCloud para el proyecto front-web ha finalizado."
+          }' $SLACK_WEBHOOK_URL
