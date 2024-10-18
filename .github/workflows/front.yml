@@ -19,7 +19,7 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       run: |
         curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts",
+          "channel": "#ci-alerts-front",
           "text": "Inicio de construcción de la imagen Docker para front-web..."
         }' $SLACK_WEBHOOK_URL
     - name: Set up Docker
@@ -49,7 +49,7 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       run: |
         curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts",
+          "channel": "#ci-alerts-front",
           "text": "La imagen Docker 'front-web' ha sido construida y subida exitosamente."
         }' $SLACK_WEBHOOK_URL
     - name: Notify Slack - Error en construcción
@@ -58,6 +58,6 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       run: |
         curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts",
+          "channel": "#ci-alerts-front",
           "text": "Error en la construcción de la imagen Docker 'front-web'."
         }' $SLACK_WEBHOOK_URL
