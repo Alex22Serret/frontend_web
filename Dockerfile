@@ -21,4 +21,5 @@ ENV VITE_HOST=0.0.0.0 \
     VITE_PORT=5173
 
 # Inicia la aplicación con el comando predeterminado de npm
+#test 1
 CMD ["npm", "run", "dev"]
