@@ -37,7 +37,7 @@ jobs:
 
     - name: Build Docker image
       id: build
-      run: docker build -f frontend_web/Dockerfile -t alex22serret/frontend_web:latest .
+      run: docker build -f Dockerfile -t alex22serret/frontend_web:latest .
 
 
     - name: Push Docker image
