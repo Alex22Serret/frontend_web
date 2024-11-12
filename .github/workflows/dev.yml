@@ -3,7 +3,7 @@ name: Build and Push Docker Image and SonarCloud Analysis
 on:
   push:
     branches:
-      - main  # Ejecutar solo en la rama 'main'
+      - dev  # Ejecutar solo en la rama 'main'
   pull_request:
     types: [opened, synchronize, reopened]
 
